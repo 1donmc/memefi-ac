@@ -421,109 +421,105 @@ async def check_and_complete_tasks(index, headers):
 async def main():
     print("Starting Memefi bot...")
     print("\r Mendapatkan list akun valid...", end="", flush=True)
-    while True:
-        with open('query_id.txt', 'r') as file:
-            lines = file.readlines()
 
-        # Kumpulkan informasi akun terlebih dahulu
-        accounts = []
-        for index, line in enumerate(lines):
-            result = await cek_user(index)
-            if result is not None:
-                first_name = result.get('firstName', 'Unknown')
-                last_name = result.get('lastName', 'Unknown')
-                league = result.get('league', 'Unknown')
-                accounts.append((index, result, first_name, last_name, league))
-            else:
-                print(
-                    f"❌ Akun {index + 1}: Token tidak valid atau terjadi kesalahan")
+    with open('query_id.txt', 'r') as file:
+        lines = file.readlines()
 
-        # Menampilkan daftar akun
-        print("\rList akun:                                   ", flush=True)
-        for index, _, first_name, last_name, league in accounts:
-            print(f"✅ [ Akun {first_name} {last_name} ] | League 🏆 {league}")
-
-        # Setelah menampilkan semua akun, mulai memeriksa tugas
-        for index, result, first_name, last_name, league in accounts:
-
+    # Kumpulkan informasi akun terlebih dahulu
+    accounts = []
+    for index, line in enumerate(lines):
+        result = await cek_user(index)
+        if result is not None:
+            first_name = result.get('firstName', 'Unknown')
+            last_name = result.get('lastName', 'Unknown')
+            league = result.get('league', 'Unknown')
+            accounts.append((index, result, first_name, last_name, league))
+        else:
             print(
-                f"\r[ Akun {index + 1} ] {first_name} {last_name} memeriksa task...", end="", flush=True)
-            headers = {'Authorization': f'Bearer {result}'}
-            if cek_task_enable == 'y':
-                await check_and_complete_tasks(index, headers)
-            else:
+                f"❌ Akun {index + 1}: Token tidak valid atau terjadi kesalahan")
+
+    # Menampilkan daftar akun
+    print("\rList akun:                                   ", flush=True)
+    for index, _, first_name, last_name, league in accounts:
+        print(f"✅ [ Akun {first_name} {last_name} ] | League 🏆 {league}")
+
+    # Setelah menampilkan semua akun, mulai memeriksa tugas
+    for index, result, first_name, last_name, league in accounts:
+
+        print(
+            f"\r[ Akun {index + 1} ] {first_name} {last_name} memeriksa task...", end="", flush=True)
+        headers = {'Authorization': f'Bearer {result}'}
+        if cek_task_enable == 'y':
+            await check_and_complete_tasks(index, headers)
+        else:
+            print(
+                f"\r\n[ Akun {index + 1} ] {first_name} {last_name} Cek task skipped\n", flush=True)
+        stat_result = await cek_stat(index, headers)
+
+        if stat_result is not None:
+            user_data = stat_result
+            output = (
+                f"[ Akun {index + 1} - {first_name} {last_name} ]\n"
+                f"Coin 🪙  {user_data['coinsAmount']:,} 🔋 {user_data['currentEnergy']} - {user_data['maxEnergy']}\n"
+                f"Level 🔫 {user_data['weaponLevel']} 🔋 {user_data['energyLimitLevel']} ⚡ {user_data['energyRechargeLevel']} 🤖 {user_data['tapBotLevel']}\n"
+                f"Boss 👾 {user_data['currentBoss']['level']} ❤️ {user_data['currentBoss']['currentHealth']} - {user_data['currentBoss']['maxHealth']}\n"
+                f"Free 🚀 {user_data['freeBoosts']['currentTurboAmount']} 🔋 {user_data['freeBoosts']['currentRefillEnergyAmount']}\n"
+            )
+            print(output, end="", flush=True)
+            level_bos = user_data['currentBoss']['level']
+            darah_bos = user_data['currentBoss']['currentHealth']
+
+            if level_bos == 11 and darah_bos == 0:
                 print(
-                    f"\r\n[ Akun {index + 1} ] {first_name} {last_name} Cek task skipped\n", flush=True)
-            stat_result = await cek_stat(index, headers)
+                    f"\n=================== {first_name} {last_name} TAMAT ====================")
+                continue
+            if darah_bos == 0:
+                print("\nBos telah dikalahkan, mengatur bos berikutnya...", flush=True)
+                await set_next_boss(index, headers)
+            print("\rTapping 👆", end="", flush=True)
 
-            if stat_result is not None:
-                user_data = stat_result
-                output = (
-                    f"[ Akun {index + 1} - {first_name} {last_name} ]\n"
-                    f"Coin 🪙  {user_data['coinsAmount']:,} 🔋 {user_data['currentEnergy']} - {user_data['maxEnergy']}\n"
-                    f"Level 🔫 {user_data['weaponLevel']} 🔋 {user_data['energyLimitLevel']} ⚡ {user_data['energyRechargeLevel']} 🤖 {user_data['tapBotLevel']}\n"
-                    f"Boss 👾 {user_data['currentBoss']['level']} ❤️ {user_data['currentBoss']['currentHealth']} - {user_data['currentBoss']['maxHealth']}\n"
-                    f"Free 🚀 {user_data['freeBoosts']['currentTurboAmount']} 🔋 {user_data['freeBoosts']['currentRefillEnergyAmount']}\n"
-                )
-                print(output, end="", flush=True)
-                level_bos = user_data['currentBoss']['level']
-                darah_bos = user_data['currentBoss']['currentHealth']
+            energy_sekarang = user_data['currentEnergy']
+            energy_used = energy_sekarang - 100
+            damage = user_data['weaponLevel']+1
+            total_tap = energy_used // damage
 
-                if level_bos == 11 and darah_bos == 0:
-                    print(
-                        f"\n=================== {first_name} {last_name} TAMAT ====================")
-                    continue
-                if darah_bos == 0:
-                    print(
-                        "\nBos telah dikalahkan, mengatur bos berikutnya...", flush=True)
-                    await set_next_boss(index, headers)
-                print("\rTapping 👆", end="", flush=True)
-
-                energy_sekarang = user_data['currentEnergy']
-                energy_used = energy_sekarang - 100
-                damage = user_data['weaponLevel']+1
-                total_tap = energy_used // damage
-
-                if energy_sekarang < 0.25 * user_data['maxEnergy']:
-                    if auto_booster == 'y':
-                        if user_data['freeBoosts']['currentRefillEnergyAmount'] > 0:
-                            print(
-                                "\r🪫 Energy Habis, mengaktifkan Recharge Booster... \n", end="", flush=True)
-                            await activate_energy_recharge_booster(index, headers)
-                            continue  # Lanjutkan tapping setelah recharge
-                        else:
-                            print(
-                                "\r🪫 Energy Habis, tidak ada booster tersedia. Beralih ke akun berikutnya.\n", flush=True)
-
+            if energy_sekarang < 0.25 * user_data['maxEnergy']:
+                if auto_booster == 'y':
+                    if user_data['freeBoosts']['currentRefillEnergyAmount'] > 0:
+                        print(
+                            "\r🪫 Energy Habis, mengaktifkan Recharge Booster... \n", end="", flush=True)
+                        await activate_energy_recharge_booster(index, headers)
+                        continue  # Lanjutkan tapping setelah recharge
                     else:
                         print(
-                            "\r🪫 Energy Habis, auto booster disable. Beralih ke akun berikutnya.\n", flush=True)
+                            "\r🪫 Energy Habis, tidak ada booster tersedia. Beralih ke akun berikutnya.\n", flush=True)
 
-                tap_payload = {
-                    "operationName": "MutationGameProcessTapsBatch",
-                    "variables": {
-                        "payload": {
-                            "nonce": generate_random_nonce(),
-                            "tapsCount": total_tap
-                        }
-                    },
-                    "query": MUTATION_GAME_PROCESS_TAPS_BATCH
-                }
-                tap_result = await submit_taps(index, tap_payload)
-                if tap_result is not None:
-                    print(f"\rTapped ✅\n ")
                 else:
                     print(
-                        f"❌ Gagal dengan status {tap_result}, mencoba lagi...")
+                        "\r🪫 Energy Habis, auto booster disable. Beralih ke akun berikutnya.\n", flush=True)
 
-                if turbo_booster == 'y':
-                    if user_data['freeBoosts']['currentTurboAmount'] > 0:
-                        await activate_booster(index, headers)
-                      #  activate_turbo_boost(headers)
+            tap_payload = {
+                "operationName": "MutationGameProcessTapsBatch",
+                "variables": {
+                    "payload": {
+                        "nonce": generate_random_nonce(),
+                        "tapsCount": total_tap
+                    }
+                },
+                "query": MUTATION_GAME_PROCESS_TAPS_BATCH
+            }
+            tap_result = await submit_taps(index, tap_payload)
+            if tap_result is not None:
+                print(f"\rTapped ✅\n ")
+            else:
+                print(f"❌ Gagal dengan status {tap_result}, mencoba lagi...")
 
-        print("=== [ SEMUA AKUN TELAH DI PROSES ] ===")
+            if turbo_booster == 'y':
+                if user_data['freeBoosts']['currentTurboAmount'] > 0:
+                    await activate_booster(index, headers)
 
-        animate_energy_recharge(15)
+    print("=== [ SEMUA AKUN TELAH DI PROSES ] ===")
+    animate_energy_recharge(15)
 
 
 def animate_energy_recharge(duration):
