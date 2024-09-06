@@ -12,7 +12,7 @@ from urllib.parse import unquote
 from utils.headers import headers_set
 from utils.queries import QUERY_USER, QUERY_LOGIN, MUTATION_GAME_PROCESS_TAPS_BATCH, QUERY_BOOSTER, QUERY_NEXT_BOSS
 from utils.queries import QUERY_TASK_VERIF, QUERY_TASK_COMPLETED, QUERY_GET_TASK, QUERY_TASK_ID, QUERY_GAME_CONFIG
-from file_to_open import file_to_open
+from file_to_open import file_to_open as f20
 os.system('clear')
 url = "https://api-gw-tg.memefi.club/graphql"
 
@@ -52,7 +52,7 @@ def generate_random_nonce(length=52):
 
 # Mendapatkan akses token
 async def fetch(account_line):
-    file_to_open = file_to_open
+    file_to_open = f20
 
     with open(file_to_open, 'r') as file:
         lines = file.readlines()
@@ -425,7 +425,7 @@ async def main():
     print("Starting Memefi bot...")
     print("\r Mendapatkan list akun valid...", end="", flush=True)
     while True:
-        file_to_open = file_to_open
+        file_to_open = f20
 
         with open(file_to_open, 'r') as file:
             lines = file.readlines()
