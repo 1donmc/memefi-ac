@@ -12,6 +12,7 @@ from urllib.parse import unquote
 from utils.headers import headers_set
 from utils.queries import QUERY_USER, QUERY_LOGIN, MUTATION_GAME_PROCESS_TAPS_BATCH, QUERY_BOOSTER, QUERY_NEXT_BOSS
 from utils.queries import QUERY_TASK_VERIF, QUERY_TASK_COMPLETED, QUERY_GET_TASK, QUERY_TASK_ID, QUERY_GAME_CONFIG
+from file_to_open import file_to_open
 os.system('clear')
 url = "https://api-gw-tg.memefi.club/graphql"
 
@@ -30,7 +31,7 @@ async def safe_post(session, url, headers, json_payload):
 # session = requests.Session()
 # session.proxies.update(proxies)
     for attempt in range(retries):
-        async with session.post(url, ssl=False, headers=headers, json=json_payload) as response:
+        async with session.post(url, headers=headers, json=json_payload) as response:
             if response.status == 200:
                 return await response.json()  # Return the JSON response if successful
             else:
@@ -51,7 +52,7 @@ def generate_random_nonce(length=52):
 
 # Mendapatkan akses token
 async def fetch(account_line):
-    file_to_open = str(input("\n\tName of File: "))
+    file_to_open = file_to_open
 
     with open(file_to_open, 'r') as file:
         lines = file.readlines()
@@ -94,8 +95,8 @@ async def fetch(account_line):
         "query": QUERY_LOGIN
     }
 
-    async with aiohttp.ClientSession(trust_env=True) as session:
-        async with session.post(url, ssl=False, headers=headers, json=data) as response:
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=data) as response:
             try:
                 json_response = await response.json()
                 if 'errors' in json_response:
@@ -125,8 +126,8 @@ async def cek_user(index):
         "query": QUERY_USER
     }
 
-    async with aiohttp.ClientSession(trust_env=True) as session:
-        async with session.post(url, ssl=False, headers=headers, json=json_payload) as response:
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=json_payload) as response:
             if response.status == 200:
                 response_data = await response.json()
                 if 'errors' in response_data:
@@ -157,8 +158,8 @@ async def activate_energy_recharge_booster(index, headers):
         "query": QUERY_BOOSTER
     }
 
-    async with aiohttp.ClientSession(trust_env=True) as session:
-        async with session.post(url, ssl=False, headers=headers, json=recharge_booster_payload) as response:
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=recharge_booster_payload) as response:
             if response.status == 200:
                 response_data = await response.json()
                 if response_data and 'data' in response_data and response_data['data'] and 'telegramGameActivateBooster' in response_data['data']:
@@ -188,8 +189,8 @@ async def activate_booster(index, headers):
         "variables": {"boosterType": "Turbo"},
         "query": QUERY_BOOSTER
     }
-    async with aiohttp.ClientSession(trust_env=True) as session:
-        async with session.post(url, ssl=False, headers=headers, json=recharge_booster_payload) as response:
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=recharge_booster_payload) as response:
             if response.status == 200:
                 response_data = await response.json()
                 current_health = response_data['data']['telegramGameActivateBooster']['currentBoss']['currentHealth']
@@ -238,8 +239,8 @@ async def submit_taps(index, json_payload):
     headers = headers_set.copy()
     headers['Authorization'] = f'Bearer {access_token}'
 
-    async with aiohttp.ClientSession(trust_env=True) as session:
-        async with session.post(url, ssl=False, headers=headers, json=json_payload) as response:
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=json_payload) as response:
             if response.status == 200:
                 response_data = await response.json()
                 return response_data  # Pastikan mengembalikan data yang sudah diurai
@@ -261,8 +262,8 @@ async def set_next_boss(index, headers):
         "query": QUERY_NEXT_BOSS
     }
 
-    async with aiohttp.ClientSession(trust_env=True) as session:
-        async with session.post(url, ssl=False, headers=headers, json=boss_payload) as response:
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=boss_payload) as response:
             if response.status == 200:
                 print("✅ Berhasil ganti bos.", flush=True)
             else:
@@ -286,8 +287,8 @@ async def cek_stat(index, headers):
         "query": QUERY_GAME_CONFIG
     }
 
-    async with aiohttp.ClientSession(trust_env=True) as session:
-        async with session.post(url, ssl=False, headers=headers, json=json_payload) as response:
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=json_payload) as response:
             if response.status == 200:
                 response_data = await response.json()
                 if 'errors' in response_data:
@@ -316,11 +317,10 @@ async def check_and_complete_tasks(index, headers):
         "query": QUERY_GET_TASK
     }
 
-    async with aiohttp.ClientSession(trust_env=True) as session:
-        async with session.post(url, ssl=False, json=task_list_payload, headers=headers) as response:
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, json=task_list_payload, headers=headers) as response:
             if response.status != 200:
                 # Menampilkan status dan respons jika bukan 200 OK
-                print("here")
                 print(f"❌ Gagal dengan status {response.status}")
                 # Menampilkan respons teks untuk debugging
                 print(await response.text())
@@ -355,7 +355,7 @@ async def check_and_complete_tasks(index, headers):
                     view_task_payload = {"operationName": "GetTaskById", "variables": {
                         "taskId": task['id']}, "query": "fragment FragmentCampaignTask on CampaignTaskOutput {\n  id\n  name\n  description\n  status\n  type\n  position\n  buttonText\n  coinsRewardAmount\n  link\n  userTaskId\n  isRequired\n  iconUrl\n  __typename\n}\n\nquery GetTaskById($taskId: String!) {\n  campaignTaskGetConfig(taskId: $taskId) {\n    ...FragmentCampaignTask\n    __typename\n  }\n}"}
                     print(view_task_payload)
-                    async with session.post(url, ssl=False, json=view_task_payload, headers=headers) as view_response:
+                    async with session.post(url, json=view_task_payload, headers=headers) as view_response:
                         view_result = await view_response.json()
 
                         if 'errors' in view_result:
@@ -377,7 +377,7 @@ async def check_and_complete_tasks(index, headers):
                         "variables": {"userTaskId": task['userTaskId']},
                         "query": QUERY_TASK_VERIF
                     }
-                    async with session.post(url, ssl=False, json=verify_task_payload, headers=headers) as verify_response:
+                    async with session.post(url, json=verify_task_payload, headers=headers) as verify_response:
                         verify_result = await verify_response.json()
 
                         if 'errors' not in verify_result:
@@ -391,7 +391,7 @@ async def check_and_complete_tasks(index, headers):
                     await asyncio.sleep(2)  # Jeda 2 detik setelah verifikasi
 
             # Cek ulang task setelah memindahkan ke verification
-            async with session.post(url, ssl=False, json=task_list_payload, headers=headers) as response:
+            async with session.post(url, json=task_list_payload, headers=headers) as response:
                 updated_tasks = await response.json()
 
                 print("\nUpdated Task List After Verification:\n")
@@ -405,7 +405,7 @@ async def check_and_complete_tasks(index, headers):
                             "variables": {"userTaskId": task['userTaskId']},
                             "query": QUERY_TASK_COMPLETED
                         }
-                        async with session.post(url, ssl=False, json=complete_task_payload, headers=headers) as complete_response:
+                        async with session.post(url, json=complete_task_payload, headers=headers) as complete_response:
                             complete_result = await complete_response.json()
 
                             if 'errors' not in complete_result:
@@ -425,7 +425,7 @@ async def main():
     print("Starting Memefi bot...")
     print("\r Mendapatkan list akun valid...", end="", flush=True)
     while True:
-        file_to_open = str(input("\n\tName of File: "))
+        file_to_open = file_to_open
 
         with open(file_to_open, 'r') as file:
             lines = file.readlines()
